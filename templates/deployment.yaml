@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shadowsocks.fullname" . }}
+  labels:
+    {{- include "shadowsocks.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shadowsocks.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "shadowsocks.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "shadowsocks.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: shadowsocks
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ss-tcp
+              containerPort: 8388
+              protocol: TCP
+            - name: ss-udp
+              containerPort: 8388
+              protocol: UDP
+          env:
+            - name: METHOD
+              value: {{ quote .Values.shadowsocks.method }}
+            {{- with .Values.shadowsocks.password }}
+            {{- if .plainText }}
+            - name: PASSWORD
+              value: {{ quote .plainText }}
+            {{- else if .existingSecret }}
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .existingSecret.secretName }}
+                  key: {{ .existingSecret.passwordKey }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.shadowsocks.dnsServers }}
+            - name: DNS_ADDRS
+              value: {{ join "," . }}
+            {{- end }}
+            {{- with .Values.shadowsocks.timeout }}
+            - name: TIMEOUT
+              value: {{ quote . }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.kcptun.enabled }}
+        - name: kcptun
+          securityContext:
+            {{- toYaml .Values.kcptun.securityContext | nindent 12 }}
+          image: "{{ .Values.kcptun.image.repository }}:{{ .Values.kcptun.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.kcptun.image.pullPolicy }}
+          env:
+            {{- with .Values.kcptun.key.existingSecret }}
+            - name: KCPTUN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .passwordKey }}
+            {{- end }}
+          args:
+            - sh
+            - -exc
+            - |
+              server \
+              {{- with .Values.kcptun.crypt }}
+              --crypt {{ quote . }} \
+              {{- end }}
+              {{- with .Values.kcptun.key }}
+              --key \
+              {{- if .existingSecret }}
+              "$KCPTUN_KEY" \
+              {{- else }}
+              {{ quote .plainText }} \
+              {{- end }}
+              {{- end }}
+              --target 127.0.0.1:8388 \
+              --listen :29900
+          ports:
+            - name: kcptun
+              containerPort: 29900
+              protocol: UDP
+          resources:
+            {{- toYaml .Values.kcptun.resources | nindent 12 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
