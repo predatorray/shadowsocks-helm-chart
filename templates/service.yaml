@@ -15,6 +15,36 @@ spec:
       targetPort: ss-tcp
       protocol: TCP
       name: ss-tcp
+    {{- if not (contains "LoadBalancer" .Values.service.type) }}
+    - port: {{ .Values.service.port }}
+      targetPort: ss-udp
+      protocol: UDP
+      name: ss-udp
+    {{- if and .Values.kcptun.enabled .Values.kcptun.port }}
+    - port: {{ .Values.kcptun.port }}
+      targetPort: kcptun
+      protocol: UDP
+      name: kcptun
+    {{- end }}
+    {{- end }}
+  selector:
+    {{- include "shadowsocks.selectorLabels" . | nindent 4 }}
+---
+{{- if and .Values.service.udpLoadBalancer.enabled (contains "LoadBalancer" .Values.service.type) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shadowsocks.udpLoadBalancer.fullname" . }}
+  labels:
+    {{- include "shadowsocks.labels" . | nindent 4 }}
+  {{- if or .Values.service.annotations .Values.service.udpLoadBalancer.annotations }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+    {{- toYaml .Values.service.udpLoadBalancer.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
     - port: {{ .Values.service.port }}
       targetPort: ss-udp
       protocol: UDP
@@ -27,3 +57,4 @@ spec:
     {{- end }}
   selector:
     {{- include "shadowsocks.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -40,6 +40,12 @@ service:
   type: ClusterIP
   port: 8388
   annotations: {}
+  # If the service is a LoadBalancer, since we cannot create one with mix protocols,
+  # a seperate UDP-dedicated LoadBalancer will be created if enabled.
+  udpLoadBalancer:
+    enabled: false
+    serviceName: ""
+    annotations: {}
 
 shadowsocks:
   method: "aes-256-gcm"
@@ -58,7 +64,7 @@ kcptun:
   port: 29900
   crypt: "" # default: aes
   key:
-    plainText: "it's a secrect"
+    plainText: "it's a secret"
     # existingSecret:
     #   secretName: ""
     #   passwordKey: password
