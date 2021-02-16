@@ -87,5 +87,6 @@ helm upgrade --install shadowsocks predatorray/shadowsocks \
 ```sh
 helm upgrade --install shadowsocks predatorray/shadowsocks \
     --set service.type=LoadBalancer \
-    --set kcptun.enabled=true
+    --set kcptun.enabled=true \
+    --set service.udpLoadBalancer.enabled=true
 ```
