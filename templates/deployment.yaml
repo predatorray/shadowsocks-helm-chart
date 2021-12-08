@@ -53,10 +53,8 @@ spec:
                   key: {{ .existingSecret.passwordKey }}
             {{- end }}
             {{- end }}
-            {{- with .Values.shadowsocks.dnsServers }}
             - name: DNS_ADDRS
-              value: {{ join "," . }}
-            {{- end }}
+              value: {{ .Values.shadowsocks.dnsServers | join "," | quote }}
             {{- with .Values.shadowsocks.timeout }}
             - name: TIMEOUT
               value: {{ quote . }}
