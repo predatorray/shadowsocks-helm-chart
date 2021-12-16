@@ -49,6 +49,7 @@ After that, all shadowsocks components will be ready on your K8S cluster.
 | `podSecurityContext`                              | Security context of the Shadowsocks pods      | |
 | `securityContext`                                 | Security context of the Shadowsocks container | |
 | `service.type`                                    | Kubernetes service type                       | `ClusterIP` |
+| `service.loadBalancerIP`                          | If the service is a LoadBalancer, you can define its external IP address | |
 | `service.port`                                    | Port where the service (shadowsocks) is exposed | `8388` |
 | `service.annotations`                             | Annotations of the service                    | |
 | `service.udpLoadBalancer.enabled`                 | If the service is a LoadBalancer, since we cannot create one with mix protocols, a seperate UDP-dedicated LoadBalancer will be created if enabled. | `false` |
